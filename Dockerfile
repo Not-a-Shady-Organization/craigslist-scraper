@@ -11,4 +11,8 @@ ENV GOOGLE_APPLICATION_CREDENTIALS=./auth-key-file.json
 # Note where to find utils functions
 ENV PYTHONPATH=$PYTHONPATH:usr/local/not-shady-utils
 
+# Install dependencies
 RUN pip3 install -r requirements.txt
+
+# Define the entrypoint (we only want this container for this program anyways)
+ENTRYPOINT ["python", "craigslist_scraper.py"]
