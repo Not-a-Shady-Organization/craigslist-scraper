@@ -53,4 +53,4 @@ TODO: We should create a dockerhub instance for these and pull from that
 By calling the built container and passing it a command, we can use the scraping script. *Note* -- these commands will return before the process is complete. Use `docker ps` to see if the container is still running.
 
 #### Examples
-`docker run -dt cl-scraper:1.0 python craigslist_scraper.py --city portland --count 2 --min-word-count 30`
+`docker run -dt cl-scraper:1.0 --city portland --count 2 --min-word-count 30`
