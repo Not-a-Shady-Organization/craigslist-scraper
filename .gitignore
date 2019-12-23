@@ -2,3 +2,5 @@
 *env
 not-shady-utils
 auth-key-file.json
+
+__pycache__
