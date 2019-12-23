@@ -82,7 +82,7 @@ To push our image to GCP's Cloud Run for event based runs, we build as above, th
 
 ```bash
 docker tag cl-scraper:[TAG] us.gcr.io/ccblender/craigslist-scraper:[TAG]
-docker push us.gcr.io/ccblender/craigslist-scraper:1.3
+docker push us.gcr.io/ccblender/craigslist-scraper:[TAG]
 ```
 
 Then, hop onto Cloud Run on the GCP Console. Select the `craigslist-scraper` service and select `Deploy New Revision`. We should see our newly uploaded container in the list. Revise and wait for it to go live. Hitting the given endpoint with a browser will return a "We are live :)" message when the container is ready for requests.
