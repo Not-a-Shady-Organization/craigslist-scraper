@@ -12,10 +12,22 @@ only longer ads from a city.
 e.g. python craigslist_scraper.py --city portland --count 60 --min-word-count 30
 '''
 
-# TODO Move scraper into file
-# TODO Make returns meaningful
-
 def craigslist_scraper(url=None, destination_bucket_dir=None, city=None, count=None, min_word_count=None, date=None):
+    ####################
+    # VALIDATE OPTIONS #
+    ####################
+
+    if not url and not city:
+        raise BadOptionsError('Must specify either URL or CITY from which to scrape')
+
+    if url:
+        print('As a particular ad\'s URL is specified, all options COUNT, MIN_WORD_COUNT, CITY, and DATE are disregarded')
+
+    if city and not count:
+        print('As COUNT is not specified, default of 100 ads will be used')
+
+
+
     s = Scraper()
 
     # If we have a specific ad to scrape
@@ -42,19 +54,6 @@ if __name__ == '__main__':
     parser.add_argument('--destination-bucket-dir', help='Destination bucket, if not the ad\'s city')
 
     args = parser.parse_args()
-
-    ####################
-    # VALIDATE OPTIONS #
-    ####################
-
-    if not args.url and not args.city:
-        raise BadOptionsError('Must specify either --url or --city from which to scrape')
-
-    if args.url:
-        print('As a particular ad\'s URL is specified, all options --count, --min-word-count, --date, and --city are disregarded')
-
-    if args.city and not args.count:
-        print('As --count is not specified, default of 100 ads will be used')
 
     count_scraped = craigslist_scraper(**vars(args))
     print(f'We scraped {count_scraped} ad(s)')
