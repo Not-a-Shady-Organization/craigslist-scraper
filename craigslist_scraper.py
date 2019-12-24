@@ -1,10 +1,10 @@
 from Scraper import Scraper
 import argparse
-from utils import BadOptionsError, convert_to_date, LogDecorator
+from utils import BadOptionsError, convert_to_date, makedir
+import os
 import logging
 
 
-@LogDecorator()
 def craigslist_scraper(url=None, destination_bucket_dir=None, city=None, count=None, min_word_count=None, date=None):
     ####################
     # VALIDATE OPTIONS #
@@ -35,6 +35,14 @@ def craigslist_scraper(url=None, destination_bucket_dir=None, city=None, count=N
         return count_scraped
 
 
+def next_log_file(log_directory):
+    files = os.listdir(log_directory)
+    if files:
+        greatest_num = max([int(filename.replace('log-', '').replace('.txt', '')) for filename in files])
+        return f'log-{greatest_num+1}.txt'
+    return 'log-0.txt'
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--url', help='URL of single craigslist missed connections ad to scrape')
@@ -45,6 +53,15 @@ if __name__ == '__main__':
     parser.add_argument('--destination-bucket-dir', help='Destination bucket, if not the ad\'s city')
 
     args = parser.parse_args()
+
+    # Setup for logging
+    LOG_DIR = 'scraper-logs'
+    makedir(LOG_DIR)
+    log_filename = next_log_file(LOG_DIR)
+    LOG_FILEPATH = f'{LOG_DIR}/{log_filename}'
+    LOG_LEVEL = os.environ.get('LOG_LEVEL', 'WARNING').upper()
+    logging.basicConfig(filename=LOG_FILEPATH, level=LOG_LEVEL)
+    from LogDecorator import LogDecorator
 
     count_scraped = craigslist_scraper(**vars(args))
     logging.info(f'We scraped {count_scraped} ad(s)')
