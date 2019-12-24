@@ -19,6 +19,7 @@ class Scraper():
     def __init__(self, **kwargs):
         pass
 
+    @LogDecorator()
     def get_ledger(self, ledger_filepath):
         # Either download the ledger, or create one, then download it
         try:
