@@ -3,7 +3,7 @@
 FROM python:3.7-slim
 
 # Get source files & API key
-COPY craigslist_scraper.py requirements.txt auth-key-file.json app.py ./
+COPY craigslist_scraper.py requirements.txt auth-key-file.json app.py Scraper.py ./
 
 COPY not-shady-utils /usr/local/not-shady-utils
 

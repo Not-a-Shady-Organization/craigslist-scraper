@@ -28,7 +28,7 @@ The scraper may scrape `COUNT` many ads from missed connections for `CITY` as...
 python craigslist_scraper.py --city [CITY] --count [COUNT]
 ```
 
-with optional `--min-word-count` option to filter for longer ads. We also can scrape a particular ad at `URL`, placing the ad into `BUCKET_DIR` as...
+with optional `--min-word-count` argument to filter for longer ads. Also optional, `--date` lets us filter to ads from a specific day (format mm-dd-yyyy). We also can scrape a particular ad at `URL`, placing the ad into `BUCKET_DIR` as...
 
 ```bash
 python craigslist_scraper.py --url [URL] --bucket-dir [BUCKET_DIR]
@@ -70,11 +70,15 @@ docker image build -t cl-scraper:1.0 .
 TODO: We should create a dockerhub instance for these and pull from that
 
 #### Run
-By calling the built container and passing it a command, we can use the scraping script. *Note* -- these commands will return before the process is complete. Use `docker ps` to see if the container is still running.
+By spinning up the built container and sending a POST request with a JSON body request, we can interact with the HTTP container. *Note* -- these commands will get responses before the process is complete.
 
 ##### Examples
 ```bash
-docker run -dt cl-scraper:1.0 --city portland --count 2 --min-word-count 30
+{
+  "city": "duluth",
+  "count": 10,
+  "date": "12-25-2019"
+}
 ```
 
 #### Push to Cloud Run
