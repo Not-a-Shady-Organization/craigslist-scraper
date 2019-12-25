@@ -5,7 +5,7 @@ from google_utils import upload_string_to_bucket, download_as_string
 import sys
 from datetime import datetime
 import hashlib
-from utils import clean_word, convert_to_date, date_matches_craigslist_date
+from utils import clean_word, convert_to_date, craigslist_format_to_date
 
 
 class AdTooShortException(Exception):
@@ -34,7 +34,7 @@ class Scraper():
     def scrape_ad_to_bucket(self, ad_url, destination_bucket_dir=None, min_word_count=None, date=None):
         if min_word_count:
             min_word_count = int(min_word_count)
-        if date:
+        if date and type(date) == str:
             date = convert_to_date(date)
 
         # Get the ad
@@ -44,7 +44,7 @@ class Scraper():
             raise e
 
         # If the ads is from the wrong date
-        if date and not date_matches_craigslist_date(date, obj['ad-posted-time']):
+        if date and not date == craigslist_format_to_date(obj['ad-posted-time']):
             return False
 
         title = obj['title']
@@ -101,7 +101,7 @@ class Scraper():
         count = int(count)
         if min_word_count:
             min_word_count = int(min_word_count)
-        if date:
+        if date and type(date) == str:
             date = convert_to_date(date)
 
         # TODO : Add abstraction via generator function to allow counts > one page of ads
