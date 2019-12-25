@@ -34,6 +34,8 @@ class Scraper():
     def scrape_ad_to_bucket(self, ad_url, destination_bucket_dir=None, min_word_count=None, date=None):
         if min_word_count:
             min_word_count = int(min_word_count)
+        if date:
+            date = convert_to_date(date)
 
         # Get the ad
         try:
@@ -99,6 +101,8 @@ class Scraper():
         count = int(count)
         if min_word_count:
             min_word_count = int(min_word_count)
+        if date:
+            date = convert_to_date(date)
 
         # TODO : Add abstraction via generator function to allow counts > one page of ads
         result_page = requests.get(ad_list)
