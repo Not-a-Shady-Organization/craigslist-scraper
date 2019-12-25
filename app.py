@@ -6,7 +6,7 @@ app = Flask(__name__)
 
 @app.route('/',  methods=['GET'])
 def hello_world():
-    return 'We are live :)'
+    return 'Craigslist Scraper is live :)'
 
 @app.route('/', methods=['POST'])
 def kickoff_scraper():
