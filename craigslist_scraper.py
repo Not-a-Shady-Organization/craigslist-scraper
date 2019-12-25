@@ -4,6 +4,8 @@ from utils import BadOptionsError, convert_to_date, makedir
 import os
 import logging
 
+LOG_DIR = os.environ.get('LOG_DIR', 'scraper-logs')
+
 
 def craigslist_scraper(url=None, destination_bucket_dir=None, city=None, count=None, min_word_count=None, date=None):
     ####################
@@ -55,7 +57,6 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # Setup for logging
-    LOG_DIR = 'scraper-logs'
     makedir(LOG_DIR)
     log_filename = next_log_file(LOG_DIR)
     LOG_FILEPATH = f'{LOG_DIR}/{log_filename}'
@@ -63,5 +64,6 @@ if __name__ == '__main__':
     logging.basicConfig(filename=LOG_FILEPATH, level=LOG_LEVEL)
     from LogDecorator import LogDecorator
 
-    count_scraped = craigslist_scraper(**vars(args))
-    logging.info(f'We scraped {count_scraped} ad(s)')
+    ret = craigslist_scraper(**vars(args))
+    logging.info(f'Program returned {ret}')
+    print(ret)

@@ -11,8 +11,10 @@ def hello_world():
 @app.route('/', methods=['POST'])
 def kickoff_scraper():
     data = request.get_json()
-    craigslist_scraper(**data)
-    return f'Job received: {str(data)}'
+    try:
+        return str(craigslist_scraper(**data))
+    except Exception as e:
+        return f'Exception occurred: {e}'
 
 
 if __name__ == '__main__':
