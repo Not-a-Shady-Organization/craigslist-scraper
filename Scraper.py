@@ -81,12 +81,19 @@ class Scraper():
         # Scrape all ad URLs from ad list page
         ad_urls = []
         for ad_element in result_soup.find_all('li', {'class':'result-row'}):
+
+            # Check date to allow for filtering
             datetime_string = ad_element.find('time')['datetime']
             datetime_obj = datetime.strptime(datetime_string, "%Y-%m-%d %H:%M")
             url = ad_element.find('a')['href']
 
             # If date is filtered, skip any non-matching dates
             if date and datetime_obj.date() != date.date():
+                continue
+
+            # Check if it's "nearby" meaning not in the location we want
+            nearby_element = ad_element.find('span', {'class': 'nearby'})
+            if nearby_element:
                 continue
 
             # Note the URL
