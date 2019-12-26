@@ -106,7 +106,7 @@ class Scraper():
                 bucket_paths += [bucket_path]
                 successful_uploads += 1
 
-                if successful_uploads >= count:
+                if count and successful_uploads >= count:
                     break
 
             except Exception as e:

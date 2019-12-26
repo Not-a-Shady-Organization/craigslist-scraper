@@ -65,7 +65,7 @@ if __name__ == '__main__':
     parser.add_argument('--url', help='URL of craigslist missed connections ads to scrape')
 
     parser.add_argument('--city', help='City from which to scrape craigslist missed connections ads')
-    parser.add_argument('--count', type=int, default=10, help='With CITY, How many ads to scrape')
+    parser.add_argument('--count', type=int, help='With CITY, How many ads to scrape')
 
     # Filters
     parser.add_argument('--date', type=convert_to_date, help='Only scrape ads posted on this date')
