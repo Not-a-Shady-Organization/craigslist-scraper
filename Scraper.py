@@ -10,10 +10,6 @@ from utils import clean_word, convert_to_date, craigslist_format_to_date
 
 
 
-class AdTooShortException(Exception):
-    pass
-
-
 class Scraper():
     def __init__(self, **kwargs):
         pass

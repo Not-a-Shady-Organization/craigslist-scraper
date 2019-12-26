@@ -22,13 +22,9 @@ pip install -r requirements.txt
 ```
 
 #### Run
-The scraper may scrape `COUNT` many ads from missed connections for `CITY` as...
+To scrape craigslist, we need any of the following option sets defined along with `DESTINATION_BUCKER_DIR`: {`URL`}, {`CITY`}, {`CITY` and `COUNT`}, {`CITY` and `DATE`}
 
-```bash
-python craigslist_scraper.py --city [CITY] --count [COUNT]
-```
-
-with optional `--min-word-count` argument to filter for longer ads. Also optional, `--date` lets us filter to ads from a specific day (format mm-dd-yyyy). We also can scrape a particular ad at `URL`, placing the ad into `BUCKET_DIR` as...
+We also have an optional `--min-word-count` argument to filter for longer ads. Also optional, `--date` lets us filter to ads from a specific day (format mm-dd-yyyy). We also can scrape a particular ad at `URL`, placing the ad into `BUCKET_DIR` as...
 
 ```bash
 python craigslist_scraper.py --url [URL] --bucket-dir [BUCKET_DIR]
@@ -64,7 +60,7 @@ Probably better to create a utils volume and mount it to all containers that nee
 To build the container image locally, use...
 
 ```bash
-docker image build -t cl-scraper:1.0 .
+docker image build -t craigslist-scraper:[TAG] .
 ```
 
 TODO: We should create a dockerhub instance for these and pull from that
@@ -85,7 +81,7 @@ By spinning up the built container and sending a POST request with a JSON body r
 To push our image to GCP's Cloud Run for event based runs, we build as above, then...
 
 ```bash
-docker tag cl-scraper:[TAG] us.gcr.io/ccblender/craigslist-scraper:[TAG]
+docker tag craigslist-scraper:[TAG] us.gcr.io/ccblender/craigslist-scraper:[TAG]
 docker push us.gcr.io/ccblender/craigslist-scraper:[TAG]
 ```
 
