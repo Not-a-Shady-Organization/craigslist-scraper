@@ -3,38 +3,50 @@ import argparse
 from utils import BadOptionsError, convert_to_date, makedir
 import os
 import logging
+import json
+
 
 LOG_DIR = os.environ.get('LOG_DIR', 'scraper-logs')
+BUCKET = 'craig-the-poet'
 
 
-def craigslist_scraper(url=None, destination_bucket_dir=None, city=None, count=None, min_word_count=None, date=None):
+def craigslist_scraper(destination_bucket_dir, url=None, city=None, count=None, min_word_count=None, max_word_count=None, date=None):
     ####################
     # VALIDATE OPTIONS #
     ####################
 
+    if not destination_bucket_dir:
+        raise BadOptionsError('Must specify location for ads to be stored')
+
     if not url and not city:
         raise BadOptionsError('Must specify either URL or CITY from which to scrape')
 
-    if url:
-        logging.warning('As a particular ad\'s URL is specified, all options COUNT, MIN_WORD_COUNT, CITY, and DATE are disregarded')
+    ##########
+    # SCRAPE #
+    ##########
 
-    if city and not count:
-        logging.warning('As COUNT is not specified, default of 100 ads will be used')
-
-
+    # TODO: This probably shouldn't be a class to be real
     s = Scraper()
-
-    # If we have a specific ad to scrape
-    if url:
-        s.scrape_ad_to_bucket(url, destination_bucket_dir=destination_bucket_dir)
-        return 1
 
     # If we have a city to scrape
     if city:
-        # TODO : This is so brittle
+        # TODO : This is so brittle. Make URL creation better... dict? allow bestof?
         ad_list_url = f'https://{city}.craigslist.org/d/missed-connections/search/mis'
-        count_scraped = s.scrape_ads_to_bucket(ad_list_url, count, destination_bucket_dir=destination_bucket_dir, min_word_count=min_word_count, date=date)
-        return count_scraped
+        return s.scrape_ads_to_bucket(
+            destination_bucket_dir,
+            ad_list_url,
+            count=count,
+            min_word_count=min_word_count,
+            max_word_count=max_word_count,
+            date=date
+        )
+
+    # If given a URL
+    if url:
+        return s.scrape_ad_to_bucket(
+            destination_bucket_dir,
+            url
+        )
 
 
 def next_log_file(log_directory):
@@ -47,12 +59,18 @@ def next_log_file(log_directory):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--url', help='URL of single craigslist missed connections ad to scrape')
+    parser.add_argument('--destination-bucket-dir', help='Destination bucket subdirectory within "craigslist-ads/"')
+
+    # Sources
+    parser.add_argument('--url', help='URL of craigslist missed connections ads to scrape')
+
     parser.add_argument('--city', help='City from which to scrape craigslist missed connections ads')
-    parser.add_argument('--count', type=int, default=100, help='With city, how many ads to scrape')
+    parser.add_argument('--count', type=int, default=10, help='With CITY, How many ads to scrape')
+
+    # Filters
     parser.add_argument('--date', type=convert_to_date, help='Only scrape ads posted on this date')
-    parser.add_argument('--min-word-count', type=int, help='URL of single craigslist missed connections ad to scrape')
-    parser.add_argument('--destination-bucket-dir', help='Destination bucket, if not the ad\'s city')
+    parser.add_argument('--min-word-count', type=int, help='Only scrape ads whose bodies contain more than this number of words')
+    parser.add_argument('--max-word-count', type=int, help='Only scrape ads whose bodies contain less than this number of words')
 
     args = parser.parse_args()
 
@@ -60,7 +78,7 @@ if __name__ == '__main__':
     makedir(LOG_DIR)
     log_filename = next_log_file(LOG_DIR)
     LOG_FILEPATH = f'{LOG_DIR}/{log_filename}'
-    LOG_LEVEL = os.environ.get('LOG_LEVEL', 'WARNING').upper()
+    LOG_LEVEL = os.environ.get('LOG_LEVEL', 'DEBUG').upper()
     logging.basicConfig(filename=LOG_FILEPATH, level=LOG_LEVEL)
     from LogDecorator import LogDecorator
 
