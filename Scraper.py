@@ -8,10 +8,9 @@ import hashlib
 from utils import clean_word, convert_to_date, craigslist_format_to_date
 
 
-class AdTooShortException(Exception):
-    pass
 
-class AdAlreadyInBucketException(Exception):
+
+class AdTooShortException(Exception):
     pass
 
 
@@ -19,23 +18,12 @@ class Scraper():
     def __init__(self, **kwargs):
         pass
 
-    @LogDecorator()
-    def get_ledger(self, ledger_filepath):
-        # Either download the ledger, or create one, then download it
-        try:
-            ledger = download_as_string('craig-the-poet', ledger_filepath)
-        except:
-            upload_string_to_bucket('craig-the-poet', '', ledger_filepath)
-            ledger = download_as_string('craig-the-poet', ledger_filepath)
-        return ledger
-
 
     @LogDecorator()
-    def scrape_ad_to_bucket(self, ad_url, destination_bucket_dir=None, min_word_count=None, date=None):
-        if min_word_count:
-            min_word_count = int(min_word_count)
-        if date and type(date) == str:
-            date = convert_to_date(date)
+    def scrape_ad_to_bucket(self, destination_bucket_dir, ad_url, min_word_count=None, max_word_count=None):
+        # Ensure things are typed correctly
+        min_word_count = int(min_word_count) if min_word_count else None
+        max_word_count = int(max_word_count) if max_word_count else None
 
         # Get the ad
         try:
@@ -43,91 +31,89 @@ class Scraper():
         except AttributeError as e:
             raise e
 
-        # If the ads is from the wrong date
-        if date and not date == craigslist_format_to_date(obj['ad-posted-time']):
-            return False
-
         title = obj['title']
         body = obj['body']
         ad_posted_time = obj['ad-posted-time']
         city = self.get_city_from_url(ad_url)
-        hash = hashlib.sha256(obj['body'].encode()).hexdigest()
-        dir = city if not destination_bucket_dir else destination_bucket_dir
-        time = str(datetime.now())
 
-        if min_word_count and len(body.split(' ')) < min_word_count:
-            raise AdTooShortException('Requested ad was below the minimum word count')
+        word_count = len(body.split(' '))
 
-        # Pull the ledger to later check if we've DL'd the ad already
-        bucket_ledger = f'craigslist/{dir}/ledger.txt'
-        ledger = self.get_ledger(bucket_ledger)
-        hashes = ledger.split('\n')
+        if (min_word_count and word_count < min_word_count) or (max_word_count and word_count > max_word_count):
+            raise Exception(f'Requested ad had {word_count} words. Out of word count range ({min_word_count}, {max_word_count})')
 
-        # If we've seen the hash, skip this ad
-        if hash in hashes:
-            raise AdAlreadyInBucketException()
-
-
-        # Add hash to seen hashes and upload this ad
         metadata = {
-            # Currently unused, but could confirm ledger accuracy
-            'hash': hash,
-
             # These metadata are passed onto the video poem when generated
             'ad-url': ad_url,
             'ad-title': title, # As we need to clean the title in most circumstances, this metadata will preserve the original title
             'ad-posted-time': ad_posted_time,
-            'ad-body-word-count': len(body.split()),
+            'ad-body-word-count': word_count,
 
             'in-use': False, # Signifies an ad is already being made into a poem
             'failed': False, # Signifies an ad has failed the poem making process (and shouldn't be used)
             'used': False # Signifies an ad has already been made into a poem
         }
 
+        # Upload the ad with it's metadata
         text = title + '\n' + body
-        destination_filepath = f'craigslist/{dir}/{clean_word(title)}.txt'
-        upload_string_to_bucket('craig-the-poet', text, destination_filepath, metadata)
+        bucket_filepath = f'craigslist/{destination_bucket_dir}/{clean_word(title)}.txt'
+        upload_string_to_bucket('craig-the-poet', text, bucket_filepath, metadata)
 
-        hashes.append(hash)
-        new_ledger = '\n'.join(hashes)
-        upload_string_to_bucket('craig-the-poet', new_ledger, bucket_ledger)
-
-        return True
+        return bucket_filepath
 
 
 
     @LogDecorator()
-    def scrape_ads_to_bucket(self, ad_list, count, destination_bucket_dir=None, min_word_count=None, date=None):
-        count = int(count)
-        if min_word_count:
-            min_word_count = int(min_word_count)
-        if date and type(date) == str:
-            date = convert_to_date(date)
+    def scrape_ads_to_bucket(self, destination_bucket_dir, ad_list_url, count=None, min_word_count=None, max_word_count=None, date=None):
+        # Ensure things are typed correctly
+        count = int(count) if count else None
+        min_word_count = int(min_word_count) if min_word_count else None
+        max_word_count = int(max_word_count) if max_word_count else None
+        if date:
+            if type(date) == str:
+                date = convert_to_date(date)
 
         # TODO : Add abstraction via generator function to allow counts > one page of ads
-        result_page = requests.get(ad_list)
+
+        # Grab the HTML source code
+        result_page = requests.get(ad_list_url)
         result_soup = BeautifulSoup(result_page.text, 'html.parser')
 
         # Scrape all ad URLs from ad list page
-        urls = []
-        for ad_title in result_soup.find_all('a', {'class':'result-title'}):
-            urls.append(ad_title['href'])
+        ad_urls = []
+        for ad_element in result_soup.find_all('li', {'class':'result-row'}):
+            datetime_string = ad_element.find('time')['datetime']
+            datetime_obj = datetime.strptime(datetime_string, "%Y-%m-%d %H:%M")
+            url = ad_element.find('a')['href']
 
+            # If date is filtered, skip any non-matching dates
+            if date and datetime_obj.date() != date.date():
+                continue
+
+            # Note the URL
+            ad_urls += [url]
+
+        # Scrape the filtered URLs
         successful_uploads = 0
-        for i, url in enumerate(urls):
+        bucket_paths = []
+        for url in ad_urls:
             try:
-                if self.scrape_ad_to_bucket(url, destination_bucket_dir=destination_bucket_dir, min_word_count=min_word_count, date=date):
-                    successful_uploads += 1
+                bucket_path = self.scrape_ad_to_bucket(
+                    destination_bucket_dir=destination_bucket_dir,
+                    ad_url=url,
+                    min_word_count=min_word_count,
+                    max_word_count=max_word_count
+                )
+                bucket_paths += [bucket_path]
+                successful_uploads += 1
 
-                if successful_uploads >= count:
-                    return successful_uploads
-            except AdTooShortException:
-                pass
-            except AdAlreadyInBucketException:
-                pass
-            except AttributeError:
-                pass
-        return successful_uploads
+                if count and successful_uploads >= count:
+                    break
+
+            except Exception as e:
+                print(e)
+
+        return bucket_paths
+
 
 
     # TODO: Only works for CL
@@ -135,16 +121,6 @@ class Scraper():
     def get_city_from_url(self, url):
         return url.replace('http://', '').replace('https://', '').split('.')[0]
 
-
-
-    # TODO: Make more sophisticated. Handle cases where e.g. CL ad is titles YELP BOY TASTY
-    @LogDecorator()
-    def classify(self, url):
-        if 'craigslist' in url:
-            return 'craigslist'
-
-        if 'yelp' in url:
-            return 'yelp'
 
 
     # TODO: Add more scrapers for more sites
